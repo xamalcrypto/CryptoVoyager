@@ -1,0 +1,76 @@
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+class CryptoVoyager:
+    def __init__(self, coingecko_api_url: str = 'https://api.coingecko.com/api/v3'):
+        self.coingecko_api_url = coingecko_api_url
+
+    # CoinGecko methods
+    def get_crypto_details(self, crypto_id: str) -> dict:
+        url = f"{self.coingecko_api_url}/coins/{crypto_id}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return {"error": "Cryptocurrency not found"}
+
+    def get_price_data(self, crypto_id: str, vs_currency: str = 'usd', days: int = 30) -> pd.DataFrame:
+        url = f"{self.coingecko_api_url}/coins/{crypto_id}/market_chart"
+        params = {
+            'vs_currency': vs_currency,
+            'days': days
+        }
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        prices = data['prices']
+        df = pd.DataFrame(prices, columns=['timestamp', 'price'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        return df
+
+    def plot_price_data(self, crypto_id: str, vs_currency: str = 'usd', days: int = 30):
+        df = self.get_price_data(crypto_id, vs_currency, days)
+        plt.figure(figsize=(12, 6))
+        plt.plot(df['timestamp'], df['price'])
+        plt.title(f'{crypto_id.capitalize()} Price over the last {days} days')
+        plt.xlabel('Date')
+        plt.ylabel(f'Price ({vs_currency.upper()})')
+        plt.grid(True)
+        plt.show()
+
+    def get_market_cap_data(self, crypto_id: str, vs_currency: str = 'usd', days: int = 30) -> pd.DataFrame:
+        url = f"{self.coingecko_api_url}/coins/{crypto_id}/market_chart"
+        params = {
+            'vs_currency': vs_currency,
+            'days': days
+        }
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        market_caps = data['market_caps']
+        df = pd.DataFrame(market_caps, columns=['timestamp', 'market_cap'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        return df
+
+    def plot_market_cap_data(self, crypto_id: str, vs_currency: str = 'usd', days: int = 30):
+        df = self.get_market_cap_data(crypto_id, vs_currency, days)
+        plt.figure(figsize=(12, 6))
+        plt.plot(df['timestamp'], df['market_cap'])
+        plt.title(f'{crypto_id.capitalize()} Market Capitalization over the last {days} days')
+        plt.xlabel('Date')
+        plt.ylabel(f'Market Cap ({vs_currency.upper()})')
+        plt.grid(True)
+        plt.show()
+
+# Example Usage
+if __name__ == "__main__":
+    crypto_voyager = CryptoVoyager()
+
+    # Fetch and Plot Price Data for a Cryptocurrency
+    crypto_id = 'bitcoin'  # Example: 'bitcoin', 'ethereum'
+    crypto_voyager.plot_price_data(crypto_id, days=30)
+
+    # Fetch and Plot Market Cap Data for a Cryptocurrency
+    crypto_voyager.plot_market_cap_data(crypto_id, days=30)
